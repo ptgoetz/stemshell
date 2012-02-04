@@ -11,6 +11,7 @@ import com.instanceone.stemshell.commands.Help;
 public class ExampleShell extends AbstractShell {
     
     public static void main(String[] args) throws Exception{
+        System.out.println("StemShell example. Press [TAB] to list available commands.");
         new ExampleShell().run(args);
     }
 

@@ -6,6 +6,8 @@
 	<version>0.1.0-SNAPSHOT</version>
 	<name>StemShell CLI Framework</name>
 	<description>Framework for creating Java-based command line shell applications.</description>
+
+
 	<dependencies>
 		<dependency>
 			<groupId>commons-cli</groupId>
@@ -19,8 +21,9 @@
 		</dependency>
 
 	</dependencies>
+
 	<build>
-	   <plugins>
+		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>

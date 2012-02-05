@@ -2,6 +2,8 @@
 
 package com.instanceone.stemshell;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -10,6 +12,8 @@ import jline.console.completer.AggregateCompleter;
 import jline.console.completer.ArgumentCompleter;
 import jline.console.completer.Completer;
 import jline.console.completer.StringsCompleter;
+import jline.console.history.FileHistory;
+import jline.console.history.History;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -23,38 +27,31 @@ import com.instanceone.stemshell.command.Command;
 public abstract class AbstractShell {
     private static CommandLineParser parser = new PosixParser();
     private Environment env = new Environment();
-    
+
     public final void run(String[] arguments) throws Exception {
         initialize(this.env);
         
-        // create completers
-        ArrayList<Completer> completers = new ArrayList<Completer>();
-        for (String cmdName : env.commandList()) {
-            // command name
-            StringsCompleter sc = new StringsCompleter(cmdName);
-            
-            
-            ArrayList<Completer> cmdCompleters = new ArrayList<Completer>();
-            // add a completer for the command name
-            cmdCompleters.add(sc);
-            // add the completer for the command
-            cmdCompleters.add(env.getCommand(cmdName).getCompleter());
-            // add a terminator for the command
-            //cmdCompleters.add(new NullCompleter());
-            
-            ArgumentCompleter ac = new ArgumentCompleter(cmdCompleters);
-            completers.add(ac);
+        // if the subclass hasn't defined a prompt, do so for them.
+        if(env.getPrompt() == null){
+            env.setPrompt(getName() + "$");
         }
 
-        AggregateCompleter aggComp = new AggregateCompleter(completers);
 
+        // create reader and add completers
         ConsoleReader reader = new ConsoleReader();
-        reader.addCompleter(aggComp);
+        reader.addCompleter(initCompleters(env));
+        // add history support
+        reader.setHistory(initHistory());
 
         AnsiConsole.systemInstall();
-        String line;
+        
+        acceptCommands(reader);
 
-        while ((line = reader.readLine(this.env.getPrompt() +" ")) != null) {
+    }
+    
+    private void acceptCommands(ConsoleReader reader) throws IOException {
+        String line;
+        while ((line = reader.readLine(this.env.getPrompt() + " ")) != null) {
             String[] argv = line.split("\\s");
             String cmdName = argv[0];
 
@@ -69,8 +66,9 @@ public abstract class AbstractShell {
                         command.execute(env, cl, reader);
                     }
                     catch (Throwable e) {
-                        System.out.println("Command failed with error: " + e.getMessage());
-                        if(cl.hasOption("v")){
+                        System.out.println("Command failed with error: "
+                                        + e.getMessage());
+                        if (cl.hasOption("v")) {
                             e.printStackTrace();
                         }
                     }
@@ -78,13 +76,13 @@ public abstract class AbstractShell {
 
             }
             else {
-                if(cmdName != null && cmdName.length() > 0){
+                if (cmdName != null && cmdName.length() > 0) {
                     System.out.println(cmdName + ": command not found");
                 }
             }
         }
     }
-    
+
     private static CommandLine parse(Command cmd, String[] args) {
         Options opts = cmd.getOptions();
         CommandLine retval = null;
@@ -97,6 +95,74 @@ public abstract class AbstractShell {
         return retval;
     }
     
+    private Completer initCompleters(Environment env){
+        // create completers
+        ArrayList<Completer> completers = new ArrayList<Completer>();
+        for (String cmdName : env.commandList()) {
+            // command name
+            StringsCompleter sc = new StringsCompleter(cmdName);
+
+            ArrayList<Completer> cmdCompleters = new ArrayList<Completer>();
+            // add a completer for the command name
+            cmdCompleters.add(sc);
+            // add the completer for the command
+            cmdCompleters.add(env.getCommand(cmdName).getCompleter());
+            // add a terminator for the command
+            // cmdCompleters.add(new NullCompleter());
+
+            ArgumentCompleter ac = new ArgumentCompleter(cmdCompleters);
+            completers.add(ac);
+        }
+
+        AggregateCompleter aggComp = new AggregateCompleter(completers);
+        
+        return aggComp;
+    }
+
+    private History initHistory() throws IOException {
+        File dir = new File(System.getProperty("user.home"), "."
+                        + this.getName());
+        if (dir.exists() && dir.isFile()) {
+            throw new IllegalStateException(
+                            "Default configuration file exists and is not a directory: "
+                                            + dir.getAbsolutePath());
+        }
+        else if (!dir.exists()) {
+            dir.mkdir();
+        }
+        // directory created, touch history file
+        File histFile = new File(dir, "history");
+        if (!histFile.exists()) {
+            if (!histFile.createNewFile()) {
+                throw new IllegalStateException(
+                                "Unable to create history file: "
+                                                + histFile.getAbsolutePath());
+            }
+        }
+
+        final FileHistory hist = new FileHistory(histFile);
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+
+            @Override
+            public void run() {
+                try {
+                    hist.flush();
+                }
+                catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+            
+        });
+
+        return hist;
+
+    }
+
     public abstract void initialize(Environment env) throws Exception;
+
+    public abstract String getName();
 
 }

@@ -10,7 +10,7 @@ import com.instanceone.stemshell.command.Command;
 
 public class Environment {
     
-    private String prompt = "eggshell$ ";
+    private String prompt = null;
     private Properties props = new Properties();
     private HashMap<String, Object> values = new HashMap<String, Object>();
     

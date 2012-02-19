@@ -2,8 +2,11 @@
 
 package com.instanceone.stemshell;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -34,6 +37,16 @@ public abstract class AbstractShell {
         // if the subclass hasn't defined a prompt, do so for them.
         if(env.getPrompt() == null){
             env.setPrompt(getName() + "$");
+        }
+        
+        // banner
+        InputStream is = this.getClass().getResourceAsStream("/banner.txt");
+        if(is != null){
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            String line = null;
+            while((line = br.readLine()) != null){
+                System.out.println(line);
+            }
         }
 
 

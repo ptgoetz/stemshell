@@ -19,7 +19,7 @@ public class ANSIStyle {
     public static final int FG_WHITE = 37;
     static final char ESC = 27;
     
-    private static final String START = "\u001B[";
+    public static final String START = "\u001B[";
     private static final String END = "m";
     
     
@@ -35,5 +35,25 @@ public class ANSIStyle {
         buf.append(OFF);
         buf.append(END);
         return buf.toString();
+    }
+    
+    public static String reprint(String input){
+        StringBuffer buf = new StringBuffer();
+        buf.append(START);
+        buf.append("g");
+//        buf.append(START);
+//        buf.append("2k");
+//        buf.append(START);
+//        buf.append("k");
+        buf.append(input);
+        return buf.toString();
+    }
+    
+    public static String clearLine(){
+        StringBuffer buf = new StringBuffer();
+        buf.append(START);
+        buf.append("2k");
+        return buf.toString();
+        
     }
 }

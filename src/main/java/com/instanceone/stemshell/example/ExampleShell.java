@@ -8,6 +8,7 @@ import com.instanceone.stemshell.commands.Env;
 import com.instanceone.stemshell.commands.Exit;
 import com.instanceone.stemshell.commands.Help;
 import com.instanceone.stemshell.commands.HistoryCmd;
+import com.instanceone.stemshell.commands.ProgressTest;
 
 public class ExampleShell extends AbstractShell {
     
@@ -24,6 +25,7 @@ public class ExampleShell extends AbstractShell {
         env.addCommand(new Env("env"));
         env.addCommand(new Help("help", env));
         env.addCommand(new HistoryCmd("history"));
+        env.addCommand(new ProgressTest("progress"));
         //env.setPrompt("stemshell%");
     }
 

@@ -18,7 +18,7 @@ public interface Command {
     
     String getName();
     
-    void execute(Environment env, CommandLine cmd, ConsoleReader reader);
+    void execute(Environment env, CommandLine cmd, ConsoleReader reader) throws Exception;
     
     Options getOptions();
     

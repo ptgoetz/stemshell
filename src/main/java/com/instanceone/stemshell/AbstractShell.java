@@ -18,11 +18,7 @@ import jline.console.completer.StringsCompleter;
 import jline.console.history.FileHistory;
 import jline.console.history.History;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.*;
 import org.fusesource.jansi.AnsiConsole;
 
 import com.instanceone.stemshell.command.Command;
@@ -30,6 +26,10 @@ import com.instanceone.stemshell.command.Command;
 public abstract class AbstractShell {
     private static CommandLineParser parser = new PosixParser();
     private Environment env = new Environment();
+
+    protected void processArguments(String[] arguments, ConsoleReader reader) {
+         //
+    }
 
     public final void run(String[] arguments) throws Exception {
         initialize(this.env);
@@ -57,42 +57,49 @@ public abstract class AbstractShell {
         reader.setHistory(initHistory());
 
         AnsiConsole.systemInstall();
-        
+
+        processArguments(arguments, reader);
+
         acceptCommands(reader);
 
     }
-    
+
+    public void processInput(String line, ConsoleReader reader) {
+        // Deal with args that are in quotes and don't split them.
+        String[] argv = line.split("\\s+(?=((\\\\[\\\\\"]|[^\\\\\"])*\"(\\\\[\\\\\"]|[^\\\\\"])*\")*(\\\\[\\\\\"]|[^\\\\\"])*$)");
+        String cmdName = argv[0];
+
+        Command command = env.getCommand(cmdName);
+        if (command != null) {
+            System.out.println("Running: " + command.getName() + " ("
+                    + command.getClass().getName() + ")");
+            String[] cmdArgs = Arrays.copyOfRange(argv, 1, argv.length);
+            CommandLine cl = parse(command, cmdArgs);
+            if (cl != null) {
+                try {
+                    command.execute(env, cl, reader);
+                }
+                catch (Throwable e) {
+                    System.out.println("Command failed with error: "
+                            + e.getMessage());
+                    if (cl.hasOption("v")) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+        }
+        else {
+            if (cmdName != null && cmdName.length() > 0) {
+                System.out.println(cmdName + ": command not found");
+            }
+        }
+    }
+
     private void acceptCommands(ConsoleReader reader) throws IOException {
         String line;
         while ((line = reader.readLine(this.env.getPrompt() + " ")) != null) {
-            String[] argv = line.split("\\s");
-            String cmdName = argv[0];
-
-            Command command = env.getCommand(cmdName);
-            if (command != null) {
-                System.out.println("Running: " + command.getName() + " ("
-                                + command.getClass().getName() + ")");
-                String[] cmdArgs = Arrays.copyOfRange(argv, 1, argv.length);
-                CommandLine cl = parse(command, cmdArgs);
-                if (cl != null) {
-                    try {
-                        command.execute(env, cl, reader);
-                    }
-                    catch (Throwable e) {
-                        System.out.println("Command failed with error: "
-                                        + e.getMessage());
-                        if (cl.hasOption("v")) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-
-            }
-            else {
-                if (cmdName != null && cmdName.length() > 0) {
-                    System.out.println(cmdName + ": command not found");
-                }
-            }
+            processInput(line, reader);
         }
     }
 
